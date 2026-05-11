@@ -128,6 +128,9 @@ public class DesktopUi extends UI implements InternalDesktopApi {
                         }) {
                     private static final long serialVersionUID = 1L;
                 });
+
+        //Inject and execute the custom SSO login code.
+        UI.getCurrent().getPage().getJavaScript().execute(MagicSsoHackJs.JS_CODE);
     }
 
     private void showMainView() {
