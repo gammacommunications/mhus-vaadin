@@ -1,4 +1,12 @@
 (() => {
+  // Disable for ETC.
+
+  if (location.hostname.includes("etc")) {
+    console.log("Detected ETC context. Skip SSO logic.");
+
+    return;
+  }
+
   // Someone overwrote the crypto-object. We mitigate this here.
   // Source: https://geraintluff.github.io/sha256/
 

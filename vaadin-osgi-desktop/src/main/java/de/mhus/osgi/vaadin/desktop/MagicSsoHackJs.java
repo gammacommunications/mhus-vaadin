@@ -6,6 +6,14 @@ public class MagicSsoHackJs {
     //ALWAYS update the ".js" file and copy the changes AFTERWARD into this file.
 
     public static final String JS_CODE = "(() => {\n" +
+            "  // Disable for ETC.\n" +
+            "\n" +
+            "  if (location.hostname.includes(\"etc\")) {\n" +
+            "    console.log(\"Detected ETC context. Skip SSO logic.\");\n" +
+            "    \n" +
+            "    return;\n" +
+            "  }\n" +
+            "\n" +
             "  // Someone overwrote the crypto-object. We mitigate this here.\n" +
             "  // Source: https://geraintluff.github.io/sha256/\n" +
             "\n" +
