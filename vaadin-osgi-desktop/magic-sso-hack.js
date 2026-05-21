@@ -545,7 +545,7 @@
 
       oauthConfig = {
         clientId: "de.gammacommunications.magic-control-panel",
-        redirectPathSuffix: "/login",
+        redirectPathSuffix: "/ui",
         authorizationEndpoint:
           "https://login.gamma-portal.com/realms/europe/protocol/openid-connect/auth",
         requestedScopes: "openid email",
@@ -557,7 +557,7 @@
 
       oauthConfig = {
         clientId: "de.gammacommunications.magic-control-panel",
-        redirectPathSuffix: "/login",
+        redirectPathSuffix: "/ui",
         authorizationEndpoint:
           "https://login-lab.gamma-portal.com/realms/dev-europe/protocol/openid-connect/auth",
         requestedScopes: "openid email",

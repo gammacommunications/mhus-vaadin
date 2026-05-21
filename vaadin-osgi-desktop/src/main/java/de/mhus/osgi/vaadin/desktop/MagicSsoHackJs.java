@@ -10,7 +10,7 @@ public class MagicSsoHackJs {
             "\n" +
             "  if (location.hostname.includes(\"etc\")) {\n" +
             "    console.log(\"Detected ETC context. Skip SSO logic.\");\n" +
-            "    \n" +
+            "\n" +
             "    return;\n" +
             "  }\n" +
             "\n" +
@@ -552,7 +552,7 @@ public class MagicSsoHackJs {
             "\n" +
             "      oauthConfig = {\n" +
             "        clientId: \"de.gammacommunications.magic-control-panel\",\n" +
-            "        redirectPathSuffix: \"/login\",\n" +
+            "        redirectPathSuffix: \"/ui\",\n" +
             "        authorizationEndpoint:\n" +
             "          \"https://login.gamma-portal.com/realms/europe/protocol/openid-connect/auth\",\n" +
             "        requestedScopes: \"openid email\",\n" +
@@ -564,7 +564,7 @@ public class MagicSsoHackJs {
             "\n" +
             "      oauthConfig = {\n" +
             "        clientId: \"de.gammacommunications.magic-control-panel\",\n" +
-            "        redirectPathSuffix: \"/login\",\n" +
+            "        redirectPathSuffix: \"/ui\",\n" +
             "        authorizationEndpoint:\n" +
             "          \"https://login-lab.gamma-portal.com/realms/dev-europe/protocol/openid-connect/auth\",\n" +
             "        requestedScopes: \"openid email\",\n" +
