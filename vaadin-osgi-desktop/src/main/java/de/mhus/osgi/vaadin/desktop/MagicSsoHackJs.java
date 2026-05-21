@@ -355,7 +355,7 @@ public class MagicSsoHackJs {
             "   * @returns The encoded string.\n" +
             "   */\n" +
             "  const urlEncodeCodeVerifierHash = (stringToEncode) => {\n" +
-            "    return btoa(String.fromCharCode.apply(null, new Uint8Array(stringToEncode)))\n" +
+            "    return btoa(stringToEncode)\n" +
             "      .replace(/\\+/g, \"-\")\n" +
             "      .replace(/\\//g, \"_\")\n" +
             "      .replace(/=+$/, \"\");\n" +

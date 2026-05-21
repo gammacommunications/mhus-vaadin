@@ -348,7 +348,7 @@
    * @returns The encoded string.
    */
   const urlEncodeCodeVerifierHash = (stringToEncode) => {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(stringToEncode)))
+    return btoa(stringToEncode)
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
       .replace(/=+$/, "");
