@@ -7,6 +7,60 @@
     return;
   }
 
+  // Include legacy toggle logic.
+
+  function initLegacyLoginToggle() {
+      const STORAGE_KEY = "mgc-panel-is-legacy-login-ebabled";
+
+      // Read current state from localStorage.
+      const isEnabled = localStorage.getItem(STORAGE_KEY) === "true";
+
+      let pressTimes = [];
+
+      window.addEventListener("keydown", function (event) {
+          // Check for ALT + L (physical L key)
+          if (event.altKey && (event.code === "KeyL" || event.key.toLowerCase() === "l")) {
+              const now = Date.now();
+
+              pressTimes.push(now);
+
+              // Keep only last 5 seconds of interactions.
+              pressTimes = pressTimes.filter(tmpTime => now - tmpTime <= 5000);
+
+              if (pressTimes.length >= 5) {
+                  pressTimes = []; // Reset
+
+                  const currentState = localStorage.getItem(STORAGE_KEY) === "true";
+
+                  const newState = !currentState;
+
+                  const confirmQuestion = currentState
+                      ? "Legacy Login is currently ENABLED. Disable it?"
+                      : "Legacy Login is currently DISABLED. Enable it?";
+
+                  if (confirm(confirmQuestion)) {
+                      localStorage.setItem(STORAGE_KEY, String(newState));
+
+                      location.reload();
+                  }
+              }
+          }
+      });
+
+      return isEnabled;
+  }
+
+  const isLegacyLoginEnabled = initLegacyLoginToggle();
+
+  if(isLegacyLoginEnabled) {
+    console.log("Legacy login is enabled. Press ALT+L five subsequent times to disable it.");
+
+    return;
+  }
+  else {
+    console.log("Legacy login is disabled. Press ALT+L five subsequent times to enable it.");
+  }
+
   // Someone overwrote the crypto-object. We mitigate this here.
   // Source: https://geraintluff.github.io/sha256/
 
@@ -348,7 +402,7 @@
    * @returns The encoded string.
    */
   const urlEncodeCodeVerifierHash = (stringToEncode) => {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(stringToEncode)))
+    return btoa(stringToEncode)
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
       .replace(/=+$/, "");
