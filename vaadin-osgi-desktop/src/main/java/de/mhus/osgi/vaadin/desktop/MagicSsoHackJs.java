@@ -153,7 +153,7 @@ public class MagicSsoHackJs {
             "   * Returns all compatibility problems or null.\n" +
             "   * @returns The detected compatibility problems.\n" +
             "   */\n" +
-            "  const getBrowserCompatibilityProblemsOrNull = () => {\n" +
+            "  function getBrowserCompatibilityProblemsOrNull() {\n" +
             "    let errorStrings = null;\n" +
             "\n" +
             "    if (!window.localStorage) {\n" +
@@ -171,7 +171,7 @@ public class MagicSsoHackJs {
             "    }\n" +
             "\n" +
             "    return errorStrings;\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Creates the authorization URL and performs a redirect.\n" +
@@ -181,13 +181,13 @@ public class MagicSsoHackJs {
             "   * @param {string} requestedScopes The requested scopes (separated by whitespace).\n" +
             "   * @param {string} optionalQueryParametersString Optional query parameters.\n" +
             "   */\n" +
-            "  const performSso = async (\n" +
+            "  async function performSso (\n" +
             "    clientId,\n" +
             "    redirectUri,\n" +
             "    authorizationEndpoint,\n" +
             "    requestedScopes,\n" +
             "    optionalQueryParametersString,\n" +
-            "  ) => {\n" +
+            "  ) {\n" +
             "    //Redirect to the authorization server.\n" +
             "    window.location = await createSsoUrl(\n" +
             "      clientId,\n" +
@@ -196,17 +196,17 @@ public class MagicSsoHackJs {
             "      requestedScopes,\n" +
             "      optionalQueryParametersString,\n" +
             "    );\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Returns true if a SSO response is present, based on the query parameters \"code\" and \"error\".\n" +
             "   * @returns True if a response is present (an expected query parameter is present).\n" +
             "   */\n" +
-            "  const isSsoResponsePresent = () => {\n" +
+            "  function isSsoResponsePresent() {\n" +
             "    const searchParams = new URLSearchParams(window.location.search);\n" +
             "\n" +
             "    return searchParams.has(\"code\") || searchParams.has(\"error\");\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Tries to process the SSO request, if the query parameter \"code\" is present. Fails if the query parameter \"error\" is present.\n" +
@@ -216,11 +216,11 @@ public class MagicSsoHackJs {
             "   * @param {string} tokenEndpoint The token endpoint.\n" +
             "   * @returns The promise containing the access token data.\n" +
             "   */\n" +
-            "  const processSsoResponseAsync = (\n" +
+            "  function processSsoResponseAsync(\n" +
             "    clientId,\n" +
             "    redirectEndpoint,\n" +
             "    tokenEndpoint,\n" +
-            "  ) => {\n" +
+            "  ) {\n" +
             "    const promise = new Promise((resolve, reject) => {\n" +
             "      const searchParams = new URLSearchParams(window.location.search);\n" +
             "\n" +
@@ -250,7 +250,7 @@ public class MagicSsoHackJs {
             "            localStorage.getItem(LOCAL_STORAGE_PKCE_STATE) ===\n" +
             "            searchParams.get(\"state\")\n" +
             "          ) {\n" +
-            "            this.sendFormPostRequestAsync(tokenEndpoint, {\n" +
+            "            sendFormPostRequestAsync(tokenEndpoint, {\n" +
             "              grant_type: \"authorization_code\",\n" +
             "              code: searchParams.get(\"code\"),\n" +
             "              client_id: clientId,\n" +
@@ -295,7 +295,7 @@ public class MagicSsoHackJs {
             "    });\n" +
             "\n" +
             "    return promise;\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Creates the authorization URL.\n" +
@@ -305,31 +305,39 @@ public class MagicSsoHackJs {
             "   * @param {string} requestedScopes The requested scopes (separated by whitespace).\n" +
             "   * @param {string} optionalQueryParametersString Optional query parameters.\n" +
             "   */\n" +
-            "  const createSsoUrl = async (\n" +
+            "  async function createSsoUrl(\n" +
             "    clientId,\n" +
             "    redirectUri,\n" +
             "    authorizationEndpoint,\n" +
             "    requestedScopes,\n" +
             "    optionalQueryParametersString,\n" +
-            "  ) => {\n" +
+            "  ) {\n" +
             "    //Create and store a random PKCE state.\n" +
+            "    \n" +
             "    const pkceStateString = createRandomString();\n" +
+            "\n" +
             "    localStorage.setItem(LOCAL_STORAGE_PKCE_STATE, pkceStateString);\n" +
             "\n" +
             "    //Create and store a random PKCE code verifier (the plaintext secret).\n" +
+            "    \n" +
             "    const codeVerifier = createRandomString();\n" +
+            "    \n" +
             "    localStorage.setItem(LOCAL_STORAGE_PKCE_CODE_VERIFIER, codeVerifier);\n" +
             "\n" +
             "    //Hash and base64-urlencode the secret to use as the challenge.\n" +
+            "    \n" +
             "    const codeVerifierTextByteArray = textToByteArray(codeVerifier);\n" +
+            "    \n" +
             "    const codeVerifierTextHashByteArray = await hashDataWithSha256Async(\n" +
             "      codeVerifierTextByteArray,\n" +
             "    );\n" +
+            "    \n" +
             "    const codeVerifierTextHashBase64 = urlEncodeCodeVerifierHash(\n" +
             "      codeVerifierTextHashByteArray,\n" +
             "    );\n" +
             "\n" +
             "    //Build the authorization URL.\n" +
+            "    \n" +
             "    let url =\n" +
             "      authorizationEndpoint +\n" +
             "      \"?response_type=code\" +\n" +
@@ -355,14 +363,14 @@ public class MagicSsoHackJs {
             "    }\n" +
             "\n" +
             "    return url;\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Creates a cryptographically random string.\n" +
             "   * @param {number} charactersCount Chars count.\n" +
             "   * @returns The created string.\n" +
             "   */\n" +
-            "  const createRandomString = (charactersCount = 128) => {\n" +
+            "  function createRandomString(charactersCount = 128) {\n" +
             "    //See https://datatracker.ietf.org/doc/html/rfc7636#section-4\n" +
             "\n" +
             "    const characters =\n" +
@@ -380,45 +388,45 @@ public class MagicSsoHackJs {
             "    }\n" +
             "\n" +
             "    return resultString;\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Converts a string to a byte array.\n" +
             "   * @param {string} textToHash The string to convert.\n" +
             "   * @returns The byte array representation.\n" +
             "   */\n" +
-            "  const textToByteArray = (textToHash) => {\n" +
+            "  function textToByteArray(textToHash) {\n" +
             "    const textEncoder = new TextEncoder();\n" +
             "    const encodedTextByteArray = textEncoder.encode(textToHash);\n" +
             "\n" +
             "    return encodedTextByteArray;\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Creates a SHA256 hash.\n" +
             "   * @param {Uint8Array} dataToHash The data to hash.\n" +
             "   * @returns The created hash.\n" +
             "   */\n" +
-            "  const hashDataWithSha256Async = (dataToHash) => {\n" +
+            "  function hashDataWithSha256Async(dataToHash) {\n" +
             "    return sha256(dataToHash);\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * URL encodes a string.\n" +
             "   * @param {string} stringToEncode The string to encode.\n" +
             "   * @returns The encoded string.\n" +
             "   */\n" +
-            "  const urlEncodeCodeVerifierHash = (stringToEncode) => {\n" +
+            "  function urlEncodeCodeVerifierHash(stringToEncode) {\n" +
             "    return btoa(stringToEncode)\n" +
             "      .replace(/\\+/g, \"-\")\n" +
             "      .replace(/\\//g, \"_\")\n" +
             "      .replace(/=+$/, \"\");\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Resets all stored data, including the current set history state (URL).\n" +
             "   */\n" +
-            "  const resetStoredData = () => {\n" +
+            "  function resetStoredData() {\n" +
             "    window.history.replaceState(\n" +
             "      null,\n" +
             "      null,\n" +
@@ -437,12 +445,12 @@ public class MagicSsoHackJs {
             "   * @param {object} keyValueHeaders Object as key value header parameters (optional).\n" +
             "   * @returns The response JSON body.\n" +
             "   */\n" +
-            "  const sendPostRequestAsync = (\n" +
+            "  function sendPostRequestAsync(\n" +
             "    url,\n" +
             "    contentType = null,\n" +
             "    keyValueParameters = null,\n" +
             "    keyValueHeaders = null,\n" +
-            "  ) => {\n" +
+            "  ) {\n" +
             "    const promise = new Promise((resolve, reject) => {\n" +
             "      const request = new XMLHttpRequest();\n" +
             "\n" +
@@ -495,7 +503,7 @@ public class MagicSsoHackJs {
             "    });\n" +
             "\n" +
             "    return promise;\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Performs a HTTP POST request, with an expected 200 OK status code, to obtain the response body (a JSON object).\n" +
@@ -504,18 +512,18 @@ public class MagicSsoHackJs {
             "   * @param {object} keyValueHeaders Object as key value header parameters (optional).\n" +
             "   * @returns The response JSON body.\n" +
             "   */\n" +
-            "  const sendFormPostRequestAsync = (\n" +
+            "  function sendFormPostRequestAsync(\n" +
             "    url,\n" +
             "    keyValueParameters = null,\n" +
             "    keyValueHeaders = null,\n" +
-            "  ) => {\n" +
-            "    return this.sendPostRequestAsync(\n" +
+            "  ) {\n" +
+            "    return sendPostRequestAsync(\n" +
             "      url,\n" +
             "      \"application/x-www-form-urlencoded; charset=UTF-8\",\n" +
             "      keyValueParameters,\n" +
             "      keyValueHeaders,\n" +
             "    );\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Performs a HTTP POST request, with an expected 200 OK status code, to obtain the response body (a JSON object).\n" +
@@ -524,19 +532,19 @@ public class MagicSsoHackJs {
             "   * @param {object} keyValueHeaders Object as key value header parameters (optional).\n" +
             "   * @returns The response JSON body.\n" +
             "   */\n" +
-            "  const sendJsonPostRequestAsync = (\n" +
+            "  function sendJsonPostRequestAsync(\n" +
             "    url,\n" +
             "    keyValueParameters = null,\n" +
             "    keyValueHeaders = null,\n" +
-            "  ) => {\n" +
-            "    return this.sendPostRequestAsync(\n" +
+            "  ) {\n" +
+            "    return sendPostRequestAsync(\n" +
             "      url,\n" +
             "      keyValueParameters,\n" +
             "      \"application/json; charset=UTF-8\",\n" +
             "      keyValueParameters,\n" +
             "      keyValueHeaders,\n" +
             "    );\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  //----------------------------------------------\n" +
             "  // Actual logic (must be executed always)\n" +
