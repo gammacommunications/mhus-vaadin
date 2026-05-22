@@ -14,6 +14,60 @@ public class MagicSsoHackJs {
             "    return;\n" +
             "  }\n" +
             "\n" +
+            "  // Include legacy toggle logic.\n" +
+            "\n" +
+            "  function initLegacyLoginToggle() {\n" +
+            "      const STORAGE_KEY = \"mgc-panel-is-legacy-login-ebabled\";\n" +
+            "\n" +
+            "      // Read current state from localStorage.\n" +
+            "      const isEnabled = localStorage.getItem(STORAGE_KEY) === \"true\";\n" +
+            "\n" +
+            "      let pressTimes = [];\n" +
+            "\n" +
+            "      window.addEventListener(\"keydown\", function (event) {\n" +
+            "          // Check for ALT + L (physical L key)\n" +
+            "          if (event.altKey && (event.code === \"KeyL\" || event.key.toLowerCase() === \"l\")) {\n" +
+            "              const now = Date.now();\n" +
+            "              \n" +
+            "              pressTimes.push(now);\n" +
+            "\n" +
+            "              // Keep only last 5 seconds of interactions.\n" +
+            "              pressTimes = pressTimes.filter(tmpTime => now - tmpTime <= 5000);\n" +
+            "\n" +
+            "              if (pressTimes.length >= 5) {\n" +
+            "                  pressTimes = []; // Reset\n" +
+            "\n" +
+            "                  const currentState = localStorage.getItem(STORAGE_KEY) === \"true\";\n" +
+            "\n" +
+            "                  const newState = !currentState;\n" +
+            "                  \n" +
+            "                  const confirmQuestion = currentState\n" +
+            "                      ? \"Legacy Login is currently ENABLED. Disable it?\"\n" +
+            "                      : \"Legacy Login is currently DISABLED. Enable it?\";\n" +
+            "\n" +
+            "                  if (confirm(confirmQuestion)) {\n" +
+            "                      localStorage.setItem(STORAGE_KEY, String(newState));\n" +
+            "\n" +
+            "                      location.reload();\n" +
+            "                  }\n" +
+            "              }\n" +
+            "          }\n" +
+            "      });\n" +
+            "\n" +
+            "      return isEnabled;\n" +
+            "  }\n" +
+            "\n" +
+            "  const isLegacyLoginEnabled = initLegacyLoginToggle();\n" +
+            "\n" +
+            "  if(isLegacyLoginEnabled) {\n" +
+            "    console.log(\"Legacy login is enabled. Press ALT+L five subsequent times to disable it.\");\n" +
+            "    \n" +
+            "    return;\n" +
+            "  }\n" +
+            "  else {\n" +
+            "    console.log(\"Legacy login is disabled. Press ALT+L five subsequent times to enable it.\");\n" +
+            "  }\n" +
+            "\n" +
             "  // Someone overwrote the crypto-object. We mitigate this here.\n" +
             "  // Source: https://geraintluff.github.io/sha256/\n" +
             "\n" +
