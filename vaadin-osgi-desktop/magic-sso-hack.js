@@ -146,7 +146,7 @@
    * Returns all compatibility problems or null.
    * @returns The detected compatibility problems.
    */
-  const getBrowserCompatibilityProblemsOrNull = () => {
+  function getBrowserCompatibilityProblemsOrNull() {
     let errorStrings = null;
 
     if (!window.localStorage) {
@@ -164,7 +164,7 @@
     }
 
     return errorStrings;
-  };
+  }
 
   /**
    * Creates the authorization URL and performs a redirect.
@@ -174,13 +174,13 @@
    * @param {string} requestedScopes The requested scopes (separated by whitespace).
    * @param {string} optionalQueryParametersString Optional query parameters.
    */
-  const performSso = async (
+  async function performSso (
     clientId,
     redirectUri,
     authorizationEndpoint,
     requestedScopes,
     optionalQueryParametersString,
-  ) => {
+  ) {
     //Redirect to the authorization server.
     window.location = await createSsoUrl(
       clientId,
@@ -189,17 +189,17 @@
       requestedScopes,
       optionalQueryParametersString,
     );
-  };
+  }
 
   /**
    * Returns true if a SSO response is present, based on the query parameters "code" and "error".
    * @returns True if a response is present (an expected query parameter is present).
    */
-  const isSsoResponsePresent = () => {
+  function isSsoResponsePresent() {
     const searchParams = new URLSearchParams(window.location.search);
 
     return searchParams.has("code") || searchParams.has("error");
-  };
+  }
 
   /**
    * Tries to process the SSO request, if the query parameter "code" is present. Fails if the query parameter "error" is present.
@@ -209,11 +209,11 @@
    * @param {string} tokenEndpoint The token endpoint.
    * @returns The promise containing the access token data.
    */
-  const processSsoResponseAsync = (
+  function processSsoResponseAsync(
     clientId,
     redirectEndpoint,
     tokenEndpoint,
-  ) => {
+  ) {
     const promise = new Promise((resolve, reject) => {
       const searchParams = new URLSearchParams(window.location.search);
 
@@ -243,7 +243,7 @@
             localStorage.getItem(LOCAL_STORAGE_PKCE_STATE) ===
             searchParams.get("state")
           ) {
-            this.sendFormPostRequestAsync(tokenEndpoint, {
+            sendFormPostRequestAsync(tokenEndpoint, {
               grant_type: "authorization_code",
               code: searchParams.get("code"),
               client_id: clientId,
@@ -288,7 +288,7 @@
     });
 
     return promise;
-  };
+  }
 
   /**
    * Creates the authorization URL.
@@ -298,31 +298,39 @@
    * @param {string} requestedScopes The requested scopes (separated by whitespace).
    * @param {string} optionalQueryParametersString Optional query parameters.
    */
-  const createSsoUrl = async (
+  async function createSsoUrl(
     clientId,
     redirectUri,
     authorizationEndpoint,
     requestedScopes,
     optionalQueryParametersString,
-  ) => {
+  ) {
     //Create and store a random PKCE state.
+
     const pkceStateString = createRandomString();
+
     localStorage.setItem(LOCAL_STORAGE_PKCE_STATE, pkceStateString);
 
     //Create and store a random PKCE code verifier (the plaintext secret).
+
     const codeVerifier = createRandomString();
+
     localStorage.setItem(LOCAL_STORAGE_PKCE_CODE_VERIFIER, codeVerifier);
 
     //Hash and base64-urlencode the secret to use as the challenge.
+
     const codeVerifierTextByteArray = textToByteArray(codeVerifier);
+
     const codeVerifierTextHashByteArray = await hashDataWithSha256Async(
       codeVerifierTextByteArray,
     );
+
     const codeVerifierTextHashBase64 = urlEncodeCodeVerifierHash(
       codeVerifierTextHashByteArray,
     );
 
     //Build the authorization URL.
+
     let url =
       authorizationEndpoint +
       "?response_type=code" +
@@ -348,14 +356,14 @@
     }
 
     return url;
-  };
+  }
 
   /**
    * Creates a cryptographically random string.
    * @param {number} charactersCount Chars count.
    * @returns The created string.
    */
-  const createRandomString = (charactersCount = 128) => {
+  function createRandomString(charactersCount = 128) {
     //See https://datatracker.ietf.org/doc/html/rfc7636#section-4
 
     const characters =
@@ -373,45 +381,45 @@
     }
 
     return resultString;
-  };
+  }
 
   /**
    * Converts a string to a byte array.
    * @param {string} textToHash The string to convert.
    * @returns The byte array representation.
    */
-  const textToByteArray = (textToHash) => {
+  function textToByteArray(textToHash) {
     const textEncoder = new TextEncoder();
     const encodedTextByteArray = textEncoder.encode(textToHash);
 
     return encodedTextByteArray;
-  };
+  }
 
   /**
    * Creates a SHA256 hash.
    * @param {Uint8Array} dataToHash The data to hash.
    * @returns The created hash.
    */
-  const hashDataWithSha256Async = (dataToHash) => {
+  function hashDataWithSha256Async(dataToHash) {
     return sha256(dataToHash);
-  };
+  }
 
   /**
    * URL encodes a string.
    * @param {string} stringToEncode The string to encode.
    * @returns The encoded string.
    */
-  const urlEncodeCodeVerifierHash = (stringToEncode) => {
+  function urlEncodeCodeVerifierHash(stringToEncode) {
     return btoa(stringToEncode)
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
       .replace(/=+$/, "");
-  };
+  }
 
   /**
    * Resets all stored data, including the current set history state (URL).
    */
-  const resetStoredData = () => {
+  function resetStoredData() {
     window.history.replaceState(
       null,
       null,
@@ -430,12 +438,12 @@
    * @param {object} keyValueHeaders Object as key value header parameters (optional).
    * @returns The response JSON body.
    */
-  const sendPostRequestAsync = (
+  function sendPostRequestAsync(
     url,
     contentType = null,
     keyValueParameters = null,
     keyValueHeaders = null,
-  ) => {
+  ) {
     const promise = new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
 
@@ -488,7 +496,7 @@
     });
 
     return promise;
-  };
+  }
 
   /**
    * Performs a HTTP POST request, with an expected 200 OK status code, to obtain the response body (a JSON object).
@@ -497,18 +505,18 @@
    * @param {object} keyValueHeaders Object as key value header parameters (optional).
    * @returns The response JSON body.
    */
-  const sendFormPostRequestAsync = (
+  function sendFormPostRequestAsync(
     url,
     keyValueParameters = null,
     keyValueHeaders = null,
-  ) => {
-    return this.sendPostRequestAsync(
+  ) {
+    return sendPostRequestAsync(
       url,
       "application/x-www-form-urlencoded; charset=UTF-8",
       keyValueParameters,
       keyValueHeaders,
     );
-  };
+  }
 
   /**
    * Performs a HTTP POST request, with an expected 200 OK status code, to obtain the response body (a JSON object).
@@ -517,19 +525,19 @@
    * @param {object} keyValueHeaders Object as key value header parameters (optional).
    * @returns The response JSON body.
    */
-  const sendJsonPostRequestAsync = (
+  function sendJsonPostRequestAsync(
     url,
     keyValueParameters = null,
     keyValueHeaders = null,
-  ) => {
-    return this.sendPostRequestAsync(
+  ) {
+    return sendPostRequestAsync(
       url,
       keyValueParameters,
       "application/json; charset=UTF-8",
       keyValueParameters,
       keyValueHeaders,
     );
-  };
+  }
 
   //----------------------------------------------
   // Actual logic (must be executed always)
