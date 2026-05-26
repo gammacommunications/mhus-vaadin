@@ -143,7 +143,7 @@
 
   // Vaadin requires a "real" interaction with the current setup.
 
-  function simulateInteraction(targetElement, text, delay = 500) {
+  async function simulateInteraction(targetElement, text, delay = 500) {
     targetElement.focus();
 
     // Simulate paste event.

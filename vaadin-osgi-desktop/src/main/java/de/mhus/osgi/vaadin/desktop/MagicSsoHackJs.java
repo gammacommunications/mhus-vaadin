@@ -150,7 +150,7 @@ public class MagicSsoHackJs {
             "\n" +
             "  // Vaadin requires a \"real\" interaction with the current setup.\n" +
             "\n" +
-            "  function simulateInteraction(targetElement, text, delay = 500) {\n" +
+            "  async function simulateInteraction(targetElement, text, delay = 500) {\n" +
             "    targetElement.focus();\n" +
             "\n" +
             "    // Simulate paste event.\n" +
