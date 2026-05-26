@@ -6,7 +6,15 @@ public class MagicSsoHackJs {
     //ALWAYS update the ".js" file and copy the changes AFTERWARD into this file.
 
     public static final String JS_CODE = "(() => {\n" +
-            "  // Someone overwrote the crypto-object. We mitigate this here.\n" +
+            "  // Disable for ETC.\n" +
+            "\n" +
+            "  if (location.hostname.includes(\"etc\")) {\n" +
+            "    console.log(\"Detected ETC context. Skip SSO logic.\");\n" +
+            "\n" +
+            "    return;\n" +
+            "  }\n" +
+            "\n" +
+            "  // There is no SHA-256 without TLS (missing crypto-API access). We mitigate this here.\n" +
             "  // Source: https://geraintluff.github.io/sha256/\n" +
             "\n" +
             "  const sha256 = function a(b) {\n" +
@@ -78,7 +86,7 @@ public class MagicSsoHackJs {
             "  function sha256DigestFallback(algorithm, data) {\n" +
             "    return new Promise((resolve, reject) => {\n" +
             "      try {\n" +
-            "        // Match subtle.digest(...) behaviorl.\n" +
+            "        // Match subtle.digest(...) behavior.\n" +
             "\n" +
             "        const algoName =\n" +
             "          typeof algorithm === \"string\"\n" +
@@ -140,12 +148,60 @@ public class MagicSsoHackJs {
             "    );\n" +
             "  }\n" +
             "\n" +
-            "  // Disable for ETC.\n" +
+            "  // Vaadin requires a \"real\" interaction with the current setup.\n" +
             "\n" +
-            "  if (location.hostname.includes(\"etc\")) {\n" +
-            "    console.log(\"Detected ETC context. Skip SSO logic.\");\n" +
+            "  async function simulateInteraction(targetElement, text, delay = 500) {\n" +
+            "    targetElement.focus();\n" +
             "\n" +
-            "    return;\n" +
+            "    // Simulate paste event.\n" +
+            "    const pasteEvent = new ClipboardEvent(\"paste\", {\n" +
+            "      bubbles: true,\n" +
+            "      cancelable: true,\n" +
+            "      clipboardData: new DataTransfer()\n" +
+            "    });\n" +
+            "\n" +
+            "    pasteEvent.clipboardData.setData(\"text/plain\", text);\n" +
+            "\n" +
+            "    targetElement.dispatchEvent(pasteEvent);\n" +
+            "\n" +
+            "    // Set the value.\n" +
+            "    targetElement.value = text;\n" +
+            "\n" +
+            "    // Fire input event so frameworks detect the change.\n" +
+            "    targetElement.dispatchEvent(new Event(\"input\", { bubbles: true }));\n" +
+            "\n" +
+            "    await new Promise((successHandler) => setTimeout(successHandler, delay));\n" +
+            "  }\n" +
+            "\n" +
+            "\n" +
+            "  // Utility to extract user-data.\n" +
+            "  async function readCustomClaim(jwt, claimName) {\n" +
+            "    if (typeof jwt !== \"string\") {\n" +
+            "      throw new Error(\"JWT must be a string\");\n" +
+            "    }\n" +
+            "\n" +
+            "    if (typeof claimName !== \"string\") {\n" +
+            "      throw new Error(\"Claim name must be a string\");\n" +
+            "    }\n" +
+            "\n" +
+            "    try {\n" +
+            "      const parts = jwt.split(\".\");\n" +
+            "      if (parts.length !== 3) {\n" +
+            "        throw new Error(\"Invalid JWT format\");\n" +
+            "      }\n" +
+            "\n" +
+            "      // Decode payload (middle part)\n" +
+            "      const payloadJson = atob(parts[1].replace(/-/g, \"+\").replace(/_/g, \"/\"));\n" +
+            "      const payload = JSON.parse(payloadJson);\n" +
+            "\n" +
+            "      if (!(claimName in payload)) {\n" +
+            "        throw new Error(`Claim '${claimName}' not found in token`);\n" +
+            "      }\n" +
+            "\n" +
+            "      return payload[claimName];\n" +
+            "    } catch (err) {\n" +
+            "      throw new Error(`Failed to decode JWT: ${err.message}`);\n" +
+            "    }\n" +
             "  }\n" +
             "\n" +
             "  // Include legacy toggle logic.\n" +
@@ -705,17 +761,19 @@ public class MagicSsoHackJs {
             "\n" +
             "    //Username which is used during SSO.\n" +
             "\n" +
-            "    const AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_USERNAME =\n" +
-            "      \"AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN\";\n" +
+            "    const AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_PREFIX =\n" +
+            "      \"AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN;\";\n" +
             "\n" +
             "    //Find all DOM elements.\n" +
             "\n" +
             "    const regularUsernameFieldElement = document.querySelector(\n" +
             "      'td > input[type=\"text\"]',\n" +
             "    );\n" +
+            "\n" +
             "    const regularPasswordFieldElement = document.querySelector(\n" +
             "      'td > input[type=\"password\"]',\n" +
             "    );\n" +
+            "\n" +
             "    const regularButtonLoginSubmitElement = document.querySelector(\n" +
             "      \"div.v-button.v-widget\",\n" +
             "    );\n" +
@@ -786,12 +844,59 @@ public class MagicSsoHackJs {
             "        .then((response) => {\n" +
             "          sessionStorage.setItem(\"idToken\", response.id_token);\n" +
             "\n" +
-            "          regularUsernameFieldElement.value =\n" +
-            "            AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_USERNAME;\n" +
+            "          console.debug(\"Try to extract user-ID claim.\");\n" +
             "\n" +
-            "          regularPasswordFieldElement.value = response.access_token;\n" +
+            "          readCustomClaim(\n" +
+            "            response.access_token,\n" +
+            "            \"de.gammacommunications.user-id\",\n" +
+            "          )\n" +
+            "            .then((userIdClaim) => {\n" +
+            "              console.debug(`Extracted user-ID claim: ${userIdClaim}`);\n" +
+            "              console.debug(\"Try to feed credentials into DOM elements.\");\n" +
             "\n" +
-            "          regularButtonLoginSubmitElement.click();\n" +
+            "              const usernamePromise = simulateInteraction(\n" +
+            "                regularUsernameFieldElement,\n" +
+            "                userIdClaim,\n" +
+            "              );\n" +
+            "\n" +
+            "              // We must include the trigger inside the password field, to avoid lookup-errors,\n" +
+            "              // before the authenticaiton-logic runs.\n" +
+            "              const passwordClaim = AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_PREFIX + response.access_token;\n" +
+            "\n" +
+            "              const passwordPromise = simulateInteraction(\n" +
+            "                regularPasswordFieldElement,\n" +
+            "                passwordClaim,\n" +
+            "              );\n" +
+            "\n" +
+            "              Promise.all([usernamePromise, passwordPromise])\n" +
+            "                .then(() => {\n" +
+            "                  console.debug(\"Try to submit credentials.\");\n" +
+            "\n" +
+            "                  regularButtonLoginSubmitElement.click();\n" +
+            "                })\n" +
+            "                .catch((error) => {\n" +
+            "                  console.error(\n" +
+            "                    \"Unable to feed credentials into DOM elements: \",\n" +
+            "                  );\n" +
+            "                  console.error(error);\n" +
+            "\n" +
+            "                  alert(\n" +
+            "                    \"Unable to submit credentials. Please try again. If the problem persists, please contact support.\",\n" +
+            "                  );\n" +
+            "\n" +
+            "                  btnOauthLoginSubmitElement.disabled = \"\";\n" +
+            "                });\n" +
+            "            })\n" +
+            "            .catch((error) => {\n" +
+            "              console.error(\"Unable to extract user-claim: \");\n" +
+            "              console.error(error);\n" +
+            "\n" +
+            "              alert(\n" +
+            "                \"Unable to extract user-claim. Please try again or use a different user. If the problem persists, please contact support.\",\n" +
+            "              );\n" +
+            "\n" +
+            "              btnOauthLoginSubmitElement.disabled = \"\";\n" +
+            "            });\n" +
             "        })\n" +
             "        .catch((error) => {\n" +
             "          console.error(\"An error occurred: \");\n" +
