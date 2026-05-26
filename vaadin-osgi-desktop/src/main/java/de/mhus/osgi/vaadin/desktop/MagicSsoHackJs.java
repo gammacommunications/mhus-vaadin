@@ -6,15 +6,138 @@ public class MagicSsoHackJs {
     //ALWAYS update the ".js" file and copy the changes AFTERWARD into this file.
 
     public static final String JS_CODE = "(() => {\n" +
-            "  function getCleanCrypto() {\n" +
-            "    const iframe = document.createElement('iframe');\n" +
-            "    iframe.style.display = 'none';\n" +
-            "    document.body.appendChild(iframe);\n" +
+            "  // Someone overwrote the crypto-object. We mitigate this here.\n" +
+            "  // Source: https://geraintluff.github.io/sha256/\n" +
             "\n" +
-            "    const cleanCrypto = iframe.contentWindow.crypto;\n" +
-            "    document.body.removeChild(iframe);\n" +
+            "  const sha256 = function a(b) {\n" +
+            "    function c(a, b) {\n" +
+            "      return (a >>> b) | (a << (32 - b));\n" +
+            "    }\n" +
+            "    for (\n" +
+            "      var d,\n" +
+            "        e,\n" +
+            "        f = Math.pow,\n" +
+            "        g = f(2, 32),\n" +
+            "        h = \"length\",\n" +
+            "        i = \"\",\n" +
+            "        j = [],\n" +
+            "        k = 8 * b[h],\n" +
+            "        l = (a.h = a.h || []),\n" +
+            "        m = (a.k = a.k || []),\n" +
+            "        n = m[h],\n" +
+            "        o = {},\n" +
+            "        p = 2;\n" +
+            "      64 > n;\n" +
+            "      p++\n" +
+            "    )\n" +
+            "      if (!o[p]) {\n" +
+            "        for (d = 0; 313 > d; d += p) o[d] = p;\n" +
+            "        ((l[n] = (f(p, 0.5) * g) | 0), (m[n++] = (f(p, 1 / 3) * g) | 0));\n" +
+            "      }\n" +
+            "    for (b += \"\\x80\"; (b[h] % 64) - 56; ) b += \"\\x00\";\n" +
+            "    for (d = 0; d < b[h]; d++) {\n" +
+            "      if (((e = b.charCodeAt(d)), e >> 8)) return;\n" +
+            "      j[d >> 2] |= e << (((3 - d) % 4) * 8);\n" +
+            "    }\n" +
+            "    for (j[j[h]] = (k / g) | 0, j[j[h]] = k, e = 0; e < j[h]; ) {\n" +
+            "      var q = j.slice(e, (e += 16)),\n" +
+            "        r = l;\n" +
+            "      for (l = l.slice(0, 8), d = 0; 64 > d; d++) {\n" +
+            "        var s = q[d - 15],\n" +
+            "          t = q[d - 2],\n" +
+            "          u = l[0],\n" +
+            "          v = l[4],\n" +
+            "          w =\n" +
+            "            l[7] +\n" +
+            "            (c(v, 6) ^ c(v, 11) ^ c(v, 25)) +\n" +
+            "            ((v & l[5]) ^ (~v & l[6])) +\n" +
+            "            m[d] +\n" +
+            "            (q[d] =\n" +
+            "              16 > d\n" +
+            "                ? q[d]\n" +
+            "                : (q[d - 16] +\n" +
+            "                    (c(s, 7) ^ c(s, 18) ^ (s >>> 3)) +\n" +
+            "                    q[d - 7] +\n" +
+            "                    (c(t, 17) ^ c(t, 19) ^ (t >>> 10))) |\n" +
+            "                  0),\n" +
+            "          x =\n" +
+            "            (c(u, 2) ^ c(u, 13) ^ c(u, 22)) +\n" +
+            "            ((u & l[1]) ^ (u & l[2]) ^ (l[1] & l[2]));\n" +
+            "        ((l = [(w + x) | 0].concat(l)), (l[4] = (l[4] + w) | 0));\n" +
+            "      }\n" +
+            "      for (d = 0; 8 > d; d++) l[d] = (l[d] + r[d]) | 0;\n" +
+            "    }\n" +
+            "    for (d = 0; 8 > d; d++)\n" +
+            "      for (e = 3; e + 1; e--) {\n" +
+            "        var y = (l[d] >> (8 * e)) & 255;\n" +
+            "        i += (16 > y ? 0 : \"\") + y.toString(16);\n" +
+            "      }\n" +
+            "    return i;\n" +
+            "  };\n" +
             "\n" +
-            "    return cleanCrypto;\n" +
+            "  function sha256DigestFallback(algorithm, data) {\n" +
+            "    return new Promise((resolve, reject) => {\n" +
+            "      try {\n" +
+            "        // Match subtle.digest(...) behaviorl.\n" +
+            "\n" +
+            "        const algoName =\n" +
+            "          typeof algorithm === \"string\"\n" +
+            "            ? algorithm\n" +
+            "            : algorithm && algorithm.name;\n" +
+            "\n" +
+            "        if (algoName !== \"SHA-256\") {\n" +
+            "          throw new Error(\n" +
+            "            \"Not supported: Only SHA-256 is implemented in this fallback.\",\n" +
+            "          );\n" +
+            "        }\n" +
+            "\n" +
+            "        // Accept ArrayBuffer, TypedArray, DataView.\n" +
+            "\n" +
+            "        const bytes = toUint8Array(data);\n" +
+            "\n" +
+            "        // Convert bytes -> binary string expected by the legacy sha256() function.\n" +
+            "\n" +
+            "        let binary = \"\";\n" +
+            "\n" +
+            "        for (let i = 0; i < bytes.length; i++) {\n" +
+            "          binary += String.fromCharCode(bytes[i]);\n" +
+            "        }\n" +
+            "\n" +
+            "        // Hash result is hex string.\n" +
+            "\n" +
+            "        const hex = sha256(binary);\n" +
+            "\n" +
+            "        if (typeof hex !== \"string\" || hex.length !== 64) {\n" +
+            "          throw new Error(\"SHA-256 fallback failed.\");\n" +
+            "        }\n" +
+            "\n" +
+            "        // Convert hex -> ArrayBuffer (exact WebCrypto-like output type).\n" +
+            "\n" +
+            "        const out = new Uint8Array(32);\n" +
+            "\n" +
+            "        for (let i = 0; i < 32; i++) {\n" +
+            "          out[i] = parseInt(hex.substr(i * 2, 2), 16);\n" +
+            "        }\n" +
+            "\n" +
+            "        resolve(out.buffer);\n" +
+            "      } catch (error) {\n" +
+            "        reject(error);\n" +
+            "      }\n" +
+            "    });\n" +
+            "  }\n" +
+            "\n" +
+            "  function toUint8Array(data) {\n" +
+            "    if (data instanceof ArrayBuffer) {\n" +
+            "      return new Uint8Array(data);\n" +
+            "    }\n" +
+            "\n" +
+            "    if (ArrayBuffer.isView(data)) {\n" +
+            "      return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);\n" +
+            "    }\n" +
+            "\n" +
+            "    throw new TypeError(\n" +
+            "      \"Failed to execute 'digest': parameter 2 is not of type 'ArrayBuffer' or 'ArrayBufferView'.\",\n" +
+            "    );\n" +
             "  }\n" +
             "\n" +
             "  // Disable for ETC.\n" +
@@ -28,55 +151,61 @@ public class MagicSsoHackJs {
             "  // Include legacy toggle logic.\n" +
             "\n" +
             "  function initLegacyLoginToggle() {\n" +
-            "      const STORAGE_KEY = \"mgc-panel-is-legacy-login-ebabled\";\n" +
+            "    const STORAGE_KEY = \"mgc-panel-is-legacy-login-ebabled\";\n" +
             "\n" +
-            "      // Read current state from localStorage.\n" +
-            "      const isEnabled = localStorage.getItem(STORAGE_KEY) === \"true\";\n" +
+            "    // Read current state from localStorage.\n" +
+            "    const isEnabled = localStorage.getItem(STORAGE_KEY) === \"true\";\n" +
             "\n" +
-            "      let pressTimes = [];\n" +
+            "    let pressTimes = [];\n" +
             "\n" +
-            "      window.addEventListener(\"keydown\", function (event) {\n" +
-            "          // Check for ALT + L (physical L key)\n" +
-            "          if (event.altKey && (event.code === \"KeyL\" || event.key.toLowerCase() === \"l\")) {\n" +
-            "              const now = Date.now();\n" +
-            "              \n" +
-            "              pressTimes.push(now);\n" +
+            "    window.addEventListener(\"keydown\", function (event) {\n" +
+            "      // Check for ALT + L (physical L key)\n" +
+            "      if (\n" +
+            "        event.altKey &&\n" +
+            "        (event.code === \"KeyL\" || event.key.toLowerCase() === \"l\")\n" +
+            "      ) {\n" +
+            "        const now = Date.now();\n" +
             "\n" +
-            "              // Keep only last 5 seconds of interactions.\n" +
-            "              pressTimes = pressTimes.filter(tmpTime => now - tmpTime <= 5000);\n" +
+            "        pressTimes.push(now);\n" +
             "\n" +
-            "              if (pressTimes.length >= 5) {\n" +
-            "                  pressTimes = []; // Reset\n" +
+            "        // Keep only last 5 seconds of interactions.\n" +
+            "        pressTimes = pressTimes.filter((tmpTime) => now - tmpTime <= 5000);\n" +
             "\n" +
-            "                  const currentState = localStorage.getItem(STORAGE_KEY) === \"true\";\n" +
+            "        if (pressTimes.length >= 5) {\n" +
+            "          pressTimes = []; // Reset\n" +
             "\n" +
-            "                  const newState = !currentState;\n" +
-            "                  \n" +
-            "                  const confirmQuestion = currentState\n" +
-            "                      ? \"Legacy Login is currently ENABLED. Disable it?\"\n" +
-            "                      : \"Legacy Login is currently DISABLED. Enable it?\";\n" +
+            "          const currentState = localStorage.getItem(STORAGE_KEY) === \"true\";\n" +
             "\n" +
-            "                  if (confirm(confirmQuestion)) {\n" +
-            "                      localStorage.setItem(STORAGE_KEY, String(newState));\n" +
+            "          const newState = !currentState;\n" +
             "\n" +
-            "                      location.reload();\n" +
-            "                  }\n" +
-            "              }\n" +
+            "          const confirmQuestion = currentState\n" +
+            "            ? \"Legacy Login is currently ENABLED. Disable it?\"\n" +
+            "            : \"Legacy Login is currently DISABLED. Enable it?\";\n" +
+            "\n" +
+            "          if (confirm(confirmQuestion)) {\n" +
+            "            localStorage.setItem(STORAGE_KEY, String(newState));\n" +
+            "\n" +
+            "            location.reload();\n" +
             "          }\n" +
-            "      });\n" +
+            "        }\n" +
+            "      }\n" +
+            "    });\n" +
             "\n" +
-            "      return isEnabled;\n" +
+            "    return isEnabled;\n" +
             "  }\n" +
             "\n" +
             "  const isLegacyLoginEnabled = initLegacyLoginToggle();\n" +
             "\n" +
-            "  if(isLegacyLoginEnabled) {\n" +
-            "    console.log(\"Legacy login is enabled. Press ALT+L five subsequent times to disable it.\");\n" +
-            "    \n" +
+            "  if (isLegacyLoginEnabled) {\n" +
+            "    console.log(\n" +
+            "      \"Legacy login is enabled. Press ALT+L five subsequent times to disable it.\",\n" +
+            "    );\n" +
+            "\n" +
             "    return;\n" +
-            "  }\n" +
-            "  else {\n" +
-            "    console.log(\"Legacy login is disabled. Press ALT+L five subsequent times to enable it.\");\n" +
+            "  } else {\n" +
+            "    console.log(\n" +
+            "      \"Legacy login is disabled. Press ALT+L five subsequent times to enable it.\",\n" +
+            "    );\n" +
             "  }\n" +
             "\n" +
             "  //----------------------------------------------\n" +
@@ -123,7 +252,7 @@ public class MagicSsoHackJs {
             "   * @param {string} requestedScopes The requested scopes (separated by whitespace).\n" +
             "   * @param {string} optionalQueryParametersString Optional query parameters.\n" +
             "   */\n" +
-            "  async function performSso (\n" +
+            "  async function performSso(\n" +
             "    clientId,\n" +
             "    redirectUri,\n" +
             "    authorizationEndpoint,\n" +
@@ -158,11 +287,7 @@ public class MagicSsoHackJs {
             "   * @param {string} tokenEndpoint The token endpoint.\n" +
             "   * @returns The promise containing the access token data.\n" +
             "   */\n" +
-            "  function processSsoResponseAsync(\n" +
-            "    clientId,\n" +
-            "    redirectEndpoint,\n" +
-            "    tokenEndpoint,\n" +
-            "  ) {\n" +
+            "  function processSsoResponseAsync(clientId, redirectEndpoint, tokenEndpoint) {\n" +
             "    const promise = new Promise((resolve, reject) => {\n" +
             "      const searchParams = new URLSearchParams(window.location.search);\n" +
             "\n" +
@@ -255,31 +380,31 @@ public class MagicSsoHackJs {
             "    optionalQueryParametersString,\n" +
             "  ) {\n" +
             "    //Create and store a random PKCE state.\n" +
-            "    \n" +
+            "\n" +
             "    const pkceStateString = createRandomString();\n" +
             "\n" +
             "    localStorage.setItem(LOCAL_STORAGE_PKCE_STATE, pkceStateString);\n" +
             "\n" +
             "    //Create and store a random PKCE code verifier (the plaintext secret).\n" +
-            "    \n" +
+            "\n" +
             "    const codeVerifier = createRandomString();\n" +
-            "    \n" +
+            "\n" +
             "    localStorage.setItem(LOCAL_STORAGE_PKCE_CODE_VERIFIER, codeVerifier);\n" +
             "\n" +
             "    //Hash and base64-urlencode the secret to use as the challenge.\n" +
-            "    \n" +
+            "\n" +
             "    const codeVerifierTextByteArray = textToByteArray(codeVerifier);\n" +
-            "    \n" +
+            "\n" +
             "    const codeVerifierTextHashByteArray = await hashDataWithSha256Async(\n" +
             "      codeVerifierTextByteArray,\n" +
             "    );\n" +
-            "    \n" +
+            "\n" +
             "    const codeVerifierTextHashBase64 = urlEncodeCodeVerifierHash(\n" +
             "      codeVerifierTextHashByteArray,\n" +
             "    );\n" +
             "\n" +
             "    //Build the authorization URL.\n" +
-            "    \n" +
+            "\n" +
             "    let url =\n" +
             "      authorizationEndpoint +\n" +
             "      \"?response_type=code\" +\n" +
@@ -350,7 +475,8 @@ public class MagicSsoHackJs {
             "   * @returns The created hash.\n" +
             "   */\n" +
             "  function hashDataWithSha256Async(dataToHash) {\n" +
-            "    return getCleanCrypto().subtle.digest('SHA-256', dataToHash);\n" +
+            "    // Replaced window.crypto.subtle.digest:\n" +
+            "    return sha256DigestFallback(\"SHA-256\", dataToHash);\n" +
             "  }\n" +
             "\n" +
             "  /**\n" +
@@ -377,7 +503,7 @@ public class MagicSsoHackJs {
             "\n" +
             "    localStorage.removeItem(LOCAL_STORAGE_PKCE_STATE);\n" +
             "    localStorage.removeItem(LOCAL_STORAGE_PKCE_CODE_VERIFIER);\n" +
-            "  };\n" +
+            "  }\n" +
             "\n" +
             "  /**\n" +
             "   * Performs a HTTP POST request, with an excpected 200 OK status code, to obtain the response body (a JSON object).\n" +
