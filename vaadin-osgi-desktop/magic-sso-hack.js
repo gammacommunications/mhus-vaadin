@@ -877,6 +877,10 @@
                 sessionStorage.getItem(cachedLocationHrefId);
 
               location.href = preservedLocation;
+
+              // We include this as a backup, to ensure that there IS a reload, event if the current location.href
+              // already equals the preserved location.
+              location.reload();
             })
             .catch((error) => {
               console.error("Unable to extract user-claim: ");

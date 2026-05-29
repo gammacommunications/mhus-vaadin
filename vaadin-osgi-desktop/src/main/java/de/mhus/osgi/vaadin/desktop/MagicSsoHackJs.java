@@ -884,6 +884,10 @@ public class MagicSsoHackJs {
             "                sessionStorage.getItem(cachedLocationHrefId);\n" +
             "\n" +
             "              location.href = preservedLocation;\n" +
+            "\n" +
+            "              // We include this as a backup, to ensure that there IS a reload, event if the current location.href\n" +
+            "              // already equals the preserved location.\n" +
+            "              location.reload();\n" +
             "            })\n" +
             "            .catch((error) => {\n" +
             "              console.error(\"Unable to extract user-claim: \");\n" +
