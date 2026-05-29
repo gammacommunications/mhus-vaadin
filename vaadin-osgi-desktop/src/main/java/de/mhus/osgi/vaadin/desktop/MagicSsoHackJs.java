@@ -6,12 +6,32 @@ public class MagicSsoHackJs {
     //ALWAYS update the ".js" file and copy the changes AFTERWARD into this file.
 
     public static final String JS_CODE = "(() => {\n" +
+            "  // Check if debugging should be enabled.\n" +
+            "\n" +
+            "  const isDebuggingEnabled = sessionStorage.getItem(\"enableDerBagger\");\n" +
+            "\n" +
+            "  if(isDebuggingEnabled) {\n" +
+            "    debugger;\n" +
+            "  }\n" +
+            "\n" +
             "  // Disable for ETC.\n" +
             "\n" +
             "  if (location.hostname.includes(\"etc\")) {\n" +
             "    console.log(\"Detected ETC context. Skip SSO logic.\");\n" +
             "\n" +
             "    return;\n" +
+            "  }\n" +
+            "\n" +
+            "  // We cache the initial location to ensure that the redirect succeeds without unwanted parameters.\n" +
+            "\n" +
+            "  const cachedLocationHrefId = \"cachedLocationHref\";\n" +
+            "  const cachedUsernameId = \"cachedUsername\";\n" +
+            "  const cachedAccessTokenId = \"cachedAccessToken\";\n" +
+            "\n" +
+            "  const cachedLocationHref = sessionStorage.getItem(cachedLocationHrefId);\n" +
+            "\n" +
+            "  if (!cachedLocationHref || cachedLocationHref.trim().length === 0) {\n" +
+            "    sessionStorage.setItem(cachedLocationHrefId, location.href);\n" +
             "  }\n" +
             "\n" +
             "  // There is no SHA-256 without TLS (missing crypto-API access). We mitigate this here.\n" +
@@ -149,7 +169,6 @@ public class MagicSsoHackJs {
             "  }\n" +
             "\n" +
             "  // Vaadin requires a \"real\" interaction with the current setup.\n" +
-            "\n" +
             "  async function simulateInteraction(targetElement, text, delay = 500) {\n" +
             "    targetElement.focus();\n" +
             "\n" +
@@ -157,7 +176,7 @@ public class MagicSsoHackJs {
             "    const pasteEvent = new ClipboardEvent(\"paste\", {\n" +
             "      bubbles: true,\n" +
             "      cancelable: true,\n" +
-            "      clipboardData: new DataTransfer()\n" +
+            "      clipboardData: new DataTransfer(),\n" +
             "    });\n" +
             "\n" +
             "    pasteEvent.clipboardData.setData(\"text/plain\", text);\n" +
@@ -172,7 +191,6 @@ public class MagicSsoHackJs {
             "\n" +
             "    await new Promise((successHandler) => setTimeout(successHandler, delay));\n" +
             "  }\n" +
-            "\n" +
             "\n" +
             "  // Utility to extract user-data.\n" +
             "  async function readCustomClaim(jwt, claimName) {\n" +
@@ -852,40 +870,20 @@ public class MagicSsoHackJs {
             "          )\n" +
             "            .then((userIdClaim) => {\n" +
             "              console.debug(`Extracted user-ID claim: ${userIdClaim}`);\n" +
-            "              console.debug(\"Try to feed credentials into DOM elements.\");\n" +
+            "              console.debug(\"Try to perform redirect with stored data.\");\n" +
             "\n" +
-            "              const usernamePromise = simulateInteraction(\n" +
-            "                regularUsernameFieldElement,\n" +
-            "                userIdClaim,\n" +
+            "              // We store the received data and conduct a reload to ensure that the original target URL is preserved.\n" +
+            "\n" +
+            "              sessionStorage.setItem(cachedUsernameId, userIdClaim);\n" +
+            "              sessionStorage.setItem(\n" +
+            "                cachedAccessTokenId,\n" +
+            "                response.access_token,\n" +
             "              );\n" +
             "\n" +
-            "              // We must include the trigger inside the password field, to avoid lookup-errors,\n" +
-            "              // before the authenticaiton-logic runs.\n" +
-            "              const passwordClaim = AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_PREFIX + response.access_token;\n" +
+            "              const preservedLocation =\n" +
+            "                sessionStorage.getItem(cachedLocationHrefId);\n" +
             "\n" +
-            "              const passwordPromise = simulateInteraction(\n" +
-            "                regularPasswordFieldElement,\n" +
-            "                passwordClaim,\n" +
-            "              );\n" +
-            "\n" +
-            "              Promise.all([usernamePromise, passwordPromise])\n" +
-            "                .then(() => {\n" +
-            "                  console.debug(\"Try to submit credentials.\");\n" +
-            "\n" +
-            "                  regularButtonLoginSubmitElement.click();\n" +
-            "                })\n" +
-            "                .catch((error) => {\n" +
-            "                  console.error(\n" +
-            "                    \"Unable to feed credentials into DOM elements: \",\n" +
-            "                  );\n" +
-            "                  console.error(error);\n" +
-            "\n" +
-            "                  alert(\n" +
-            "                    \"Unable to submit credentials. Please try again. If the problem persists, please contact support.\",\n" +
-            "                  );\n" +
-            "\n" +
-            "                  btnOauthLoginSubmitElement.disabled = \"\";\n" +
-            "                });\n" +
+            "              location.href = preservedLocation;\n" +
             "            })\n" +
             "            .catch((error) => {\n" +
             "              console.error(\"Unable to extract user-claim: \");\n" +
@@ -910,6 +908,52 @@ public class MagicSsoHackJs {
             "        });\n" +
             "    } else {\n" +
             "      console.log(\"No SSO response is present.\");\n" +
+            "    }\n" +
+            "\n" +
+            "    // Check if a token was already obtained and the reload (to preserve the correct URL was also conducted).\n" +
+            "\n" +
+            "    const extractedUsername = sessionStorage.getItem(cachedUsernameId);\n" +
+            "\n" +
+            "    if (extractedUsername) {\n" +
+            "      console.debug(`Found stored user-ID (${extractedUsername}). Try to perform login after reload.`);\n" +
+            "\n" +
+            "      const extractedToken = sessionStorage.getItem(cachedAccessTokenId);\n" +
+            "\n" +
+            "      sessionStorage.clear(cachedLocationHrefId);\n" +
+            "      sessionStorage.clear(cachedUsernameId);\n" +
+            "      sessionStorage.clear(cachedAccessTokenId);\n" +
+            "\n" +
+            "      const usernamePromise = simulateInteraction(\n" +
+            "        regularUsernameFieldElement,\n" +
+            "        extractedUsername,\n" +
+            "      );\n" +
+            "\n" +
+            "      // We must include the trigger inside the password field, to avoid lookup-errors,\n" +
+            "      // before the authentication-logic runs.\n" +
+            "      const passwordClaim =\n" +
+            "        AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_PREFIX + extractedToken;\n" +
+            "\n" +
+            "      const passwordPromise = simulateInteraction(\n" +
+            "        regularPasswordFieldElement,\n" +
+            "        passwordClaim,\n" +
+            "      );\n" +
+            "\n" +
+            "      Promise.all([usernamePromise, passwordPromise])\n" +
+            "        .then(() => {\n" +
+            "          console.debug(\"Try to submit credentials.\");\n" +
+            "\n" +
+            "          regularButtonLoginSubmitElement.click();\n" +
+            "        })\n" +
+            "        .catch((error) => {\n" +
+            "          console.error(\"Unable to feed credentials into DOM elements: \");\n" +
+            "          console.error(error);\n" +
+            "\n" +
+            "          alert(\n" +
+            "            \"Unable to submit credentials. Please try again. If the problem persists, please contact support.\",\n" +
+            "          );\n" +
+            "\n" +
+            "          btnOauthLoginSubmitElement.disabled = \"\";\n" +
+            "        });\n" +
             "    }\n" +
             "  } else {\n" +
             "    console.error(\"Unable to find login-form table! Show legacy login...\");\n" +

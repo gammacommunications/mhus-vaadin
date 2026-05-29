@@ -1,10 +1,30 @@
 (() => {
+  // Check if debugging should be enabled.
+
+  const isDebuggingEnabled = sessionStorage.getItem("enableDerBagger");
+
+  if(isDebuggingEnabled) {
+    debugger;
+  }
+
   // Disable for ETC.
 
   if (location.hostname.includes("etc")) {
     console.log("Detected ETC context. Skip SSO logic.");
 
     return;
+  }
+
+  // We cache the initial location to ensure that the redirect succeeds without unwanted parameters.
+
+  const cachedLocationHrefId = "cachedLocationHref";
+  const cachedUsernameId = "cachedUsername";
+  const cachedAccessTokenId = "cachedAccessToken";
+
+  const cachedLocationHref = sessionStorage.getItem(cachedLocationHrefId);
+
+  if (!cachedLocationHref || cachedLocationHref.trim().length === 0) {
+    sessionStorage.setItem(cachedLocationHrefId, location.href);
   }
 
   // There is no SHA-256 without TLS (missing crypto-API access). We mitigate this here.
@@ -142,7 +162,6 @@
   }
 
   // Vaadin requires a "real" interaction with the current setup.
-
   async function simulateInteraction(targetElement, text, delay = 500) {
     targetElement.focus();
 
@@ -150,7 +169,7 @@
     const pasteEvent = new ClipboardEvent("paste", {
       bubbles: true,
       cancelable: true,
-      clipboardData: new DataTransfer()
+      clipboardData: new DataTransfer(),
     });
 
     pasteEvent.clipboardData.setData("text/plain", text);
@@ -165,7 +184,6 @@
 
     await new Promise((successHandler) => setTimeout(successHandler, delay));
   }
-
 
   // Utility to extract user-data.
   async function readCustomClaim(jwt, claimName) {
@@ -845,40 +863,20 @@
           )
             .then((userIdClaim) => {
               console.debug(`Extracted user-ID claim: ${userIdClaim}`);
-              console.debug("Try to feed credentials into DOM elements.");
+              console.debug("Try to perform redirect with stored data.");
 
-              const usernamePromise = simulateInteraction(
-                regularUsernameFieldElement,
-                userIdClaim,
+              // We store the received data and conduct a reload to ensure that the original target URL is preserved.
+
+              sessionStorage.setItem(cachedUsernameId, userIdClaim);
+              sessionStorage.setItem(
+                cachedAccessTokenId,
+                response.access_token,
               );
 
-              // We must include the trigger inside the password field, to avoid lookup-errors,
-              // before the authenticaiton-logic runs.
-              const passwordClaim = AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_PREFIX + response.access_token;
+              const preservedLocation =
+                sessionStorage.getItem(cachedLocationHrefId);
 
-              const passwordPromise = simulateInteraction(
-                regularPasswordFieldElement,
-                passwordClaim,
-              );
-
-              Promise.all([usernamePromise, passwordPromise])
-                .then(() => {
-                  console.debug("Try to submit credentials.");
-
-                  regularButtonLoginSubmitElement.click();
-                })
-                .catch((error) => {
-                  console.error(
-                    "Unable to feed credentials into DOM elements: ",
-                  );
-                  console.error(error);
-
-                  alert(
-                    "Unable to submit credentials. Please try again. If the problem persists, please contact support.",
-                  );
-
-                  btnOauthLoginSubmitElement.disabled = "";
-                });
+              location.href = preservedLocation;
             })
             .catch((error) => {
               console.error("Unable to extract user-claim: ");
@@ -903,6 +901,52 @@
         });
     } else {
       console.log("No SSO response is present.");
+    }
+
+    // Check if a token was already obtained and the reload (to preserve the correct URL was also conducted).
+
+    const extractedUsername = sessionStorage.getItem(cachedUsernameId);
+
+    if (extractedUsername) {
+      console.debug(`Found stored user-ID (${extractedUsername}). Try to perform login after reload.`);
+
+      const extractedToken = sessionStorage.getItem(cachedAccessTokenId);
+
+      sessionStorage.clear(cachedLocationHrefId);
+      sessionStorage.clear(cachedUsernameId);
+      sessionStorage.clear(cachedAccessTokenId);
+
+      const usernamePromise = simulateInteraction(
+        regularUsernameFieldElement,
+        extractedUsername,
+      );
+
+      // We must include the trigger inside the password field, to avoid lookup-errors,
+      // before the authentication-logic runs.
+      const passwordClaim =
+        AUTH_TYPE_KEYCLOAK_ACCESS_TOKEN_PREFIX + extractedToken;
+
+      const passwordPromise = simulateInteraction(
+        regularPasswordFieldElement,
+        passwordClaim,
+      );
+
+      Promise.all([usernamePromise, passwordPromise])
+        .then(() => {
+          console.debug("Try to submit credentials.");
+
+          regularButtonLoginSubmitElement.click();
+        })
+        .catch((error) => {
+          console.error("Unable to feed credentials into DOM elements: ");
+          console.error(error);
+
+          alert(
+            "Unable to submit credentials. Please try again. If the problem persists, please contact support.",
+          );
+
+          btnOauthLoginSubmitElement.disabled = "";
+        });
     }
   } else {
     console.error("Unable to find login-form table! Show legacy login...");
