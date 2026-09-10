@@ -204,13 +204,21 @@ public class MagicSsoHackJs {
             "\n" +
             "    try {\n" +
             "      const parts = jwt.split(\".\");\n" +
+            "\n" +
             "      if (parts.length !== 3) {\n" +
             "        throw new Error(\"Invalid JWT format\");\n" +
             "      }\n" +
             "\n" +
-            "      // Decode payload (middle part)\n" +
-            "      const payloadJson = atob(parts[1].replace(/-/g, \"+\").replace(/_/g, \"/\"));\n" +
-            "      const payload = JSON.parse(payloadJson);\n" +
+            "      // Decode payload (middle part but CONSIDER NON-LATIN-1 CHARS)\n" +
+            "      const latin1DecodedBase64 = atob(parts[1].replace(/-/g, \"+\").replace(/_/g, \"/\"));\n" +
+            "\n" +
+            "      const urlEncodedAscii = latin1DecodedBase64.split('').map(function(c) {\n" +
+            "            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);\n" +
+            "      }).join('');\n" +
+            "\n" +
+            "      const payloadJsonUnicode = decodeURIComponent(urlEncodedAscii);\n" +
+            "\n" +
+            "      const payload = JSON.parse(payloadJsonUnicode);\n" +
             "\n" +
             "      if (!(claimName in payload)) {\n" +
             "        throw new Error(`Claim '${claimName}' not found in token`);\n" +

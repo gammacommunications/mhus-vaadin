@@ -197,13 +197,21 @@
 
     try {
       const parts = jwt.split(".");
+
       if (parts.length !== 3) {
         throw new Error("Invalid JWT format");
       }
 
-      // Decode payload (middle part)
-      const payloadJson = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
-      const payload = JSON.parse(payloadJson);
+      // Decode payload (middle part but CONSIDER NON-LATIN-1 CHARS)
+      const latin1DecodedBase64 = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+
+      const urlEncodedAscii = latin1DecodedBase64.split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join('');
+
+      const payloadJsonUnicode = decodeURIComponent(urlEncodedAscii);
+
+      const payload = JSON.parse(payloadJsonUnicode);
 
       if (!(claimName in payload)) {
         throw new Error(`Claim '${claimName}' not found in token`);
